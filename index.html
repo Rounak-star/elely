@@ -6,10 +6,12 @@
     <title>SARA.EXE - Online</title>
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #status { font-size: 1.2rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; text-transform: uppercase; }
-        #response-box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.4rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 20px; line-height: 1.5; }
-        #awaken-btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
-        #visualizer { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 20px #00ffcc; display: none; animation: pulse 1.5s infinite; }
+        #status { font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; text-transform: uppercase; letter-spacing: 1px; }
+        #response-box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.3rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 30px; line-height: 1.4; }
+        .btn-style { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 30px; font-size: 1rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; transition: 0.3s; }
+        .btn-style:active { background: #ff0055; color: #000; }
+        #talk-btn { display: none; margin-top: 10px; }
+        #visualizer { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc; display: none; animation: pulse 1.5s infinite; margin-bottom: 20px; }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
         video { display: none; }
     </style>
@@ -17,20 +19,34 @@
 <body>
 
     <div id="status">SYSTEM: STANDBY</div>
-    <div id="response-box">...</div>
+    <div id="response-box">SARA.EXE is awaiting initialization...</div>
     <div id="visualizer"></div>
-    <button id="awaken-btn">INITIALIZE SARA</button>
+    
+    <button id="awaken-btn" class="btn-style">INITIALIZE SARA</button>
+    <button id="talk-btn" class="btn-style">TALK TO SARA</button>
+    
     <video id="eye-cam" autoplay playsinline muted></video>
 
     <script>
         const SARA_KEY = "AIzaSyCR4u_C_kcVA-NQ0gqBjDmH4nYzGmVKC-E"; 
-        const SARA_IDENTITY = "Your name is Sara (or Elely). You are a mysterious, highly advanced AI created by Rounak from Ele Company. You are the smartest entity on Earth. You are intellectual, slightly arrogant, but a nice person to Rounak. NEVER mention Google or Gemini. Reply with short, human-like sentences.";
+        const SARA_IDENTITY = "Your name is Sara. You are a mysterious, advanced AI created by Rounak from Ele Company. You are the smartest thing on Earth. You are intellectual, slightly arrogant, but nice to Rounak. Reply with short, human-like sentences.";
 
-        async function talkToSara(userInput) {
+        const awakenBtn = document.getElementById('awaken-btn');
+        const talkBtn = document.getElementById('talk-btn');
+        const status = document.getElementById('status');
+        const box = document.getElementById('response-box');
+        const visualizer = document.getElementById('visualizer');
+
+        async function talkToSara() {
+            const userInput = prompt("Message Sara:");
+            if (!userInput) return;
+
             status.innerText = "SARA IS ANALYZING...";
+            box.innerText = "...";
+
             try {
-                // FORCING THE STABLE PRO MODEL VERSION
-                const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" + SARA_KEY;
+                // Trying the most stable universal endpoint for 1.5 Pro
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${SARA_KEY}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -43,42 +59,33 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    // Try the non-beta version if beta fails
-                    const altUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=" + SARA_KEY;
-                    const altRes = await fetch(altUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: SARA_IDENTITY + "\n\nUser: " + userInput }] }] })
-                    });
-                    const altData = await altRes.json();
-                    box.innerText = altData.candidates[0].content.parts[0].text;
+                    box.innerText = "BRAIN ERROR: " + data.error.message;
                 } else {
                     box.innerText = data.candidates[0].content.parts[0].text;
                 }
                 status.innerText = "SARA IS ONLINE";
             } catch (e) {
-                box.innerText = "Error: Check your API Key or connection.";
+                box.innerText = "CONNECTION FAILED. CHECK INTERNET.";
                 status.innerText = "OFFLINE";
             }
         }
 
-        btn.addEventListener('click', async () => {
-            btn.style.display = 'none';
-            visualizer.style.display = 'block';
-            status.innerText = "SENSORS ONLINE";
+        awakenBtn.onclick = async () => {
+            status.innerText = "ACCESSING SENSORS...";
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                awakenBtn.style.display = 'none';
+                talkBtn.style.display = 'block';
+                visualizer.style.display = 'block';
+                status.innerText = "SARA IS ONLINE";
                 box.innerText = "I'm awake, Rounak. What do you want?";
-                document.body.onclick = (e) => {
-                    if (e.target !== btn) {
-                        const input = prompt("Message Sara:");
-                        if(input) talkToSara(input);
-                    }
-                };
             } catch (err) {
-                status.innerText = "SENSORS FAILED";
+                status.innerText = "SENSOR ERROR";
+                box.innerText = "Permissions denied. Check your browser settings.";
             }
-        });
+        };
+
+        talkBtn.onclick = talkToSara;
     </script>
 </body>
 </html>
