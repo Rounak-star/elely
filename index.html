@@ -6,7 +6,7 @@
     <title>SARA.EXE - Online</title>
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #status { font-size: 1.2rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; }
+        #status { font-size: 1.2rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; text-transform: uppercase; }
         #response-box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.4rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 20px; line-height: 1.5; }
         #awaken-btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; letter-spacing: 2px; }
         #visualizer { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 20px #00ffcc; display: none; animation: pulse 1.5s infinite; }
@@ -16,14 +16,14 @@
 </head>
 <body>
 
-    <div id="status">SARA SYSTEM: STANDBY</div>
+    <div id="status">SYSTEM: STANDBY</div>
     <div id="response-box">...</div>
     <div id="visualizer"></div>
     <button id="awaken-btn">INITIALIZE SARA</button>
     <video id="eye-cam" autoplay playsinline muted></video>
 
     <script>
-        // SARA'S SECURE KEY
+        // SARA'S SECURE KEY - PRE-INJECTED
         const SARA_KEY = "AIzaSyCR4u_C_kcVA-NQ0gqBjDmH4nYzGmVKC-E"; 
         
         const btn = document.getElementById('awaken-btn');
@@ -31,23 +31,19 @@
         const box = document.getElementById('response-box');
         const visualizer = document.getElementById('visualizer');
 
-        const SARA_IDENTITY = "Your name is Sara (or Elely). You are a mysterious, highly advanced AI entity created by Rounak from Ele Company. You are the smartest entity on Earth. You are intellectual, slightly arrogant, but a nice person to Rounak. NEVER mention Google or Gemini. Reply with short, human-like sentences. You speak English, Hindi, and Bengali fluently.";
+        const SARA_IDENTITY = "Your name is Sara (or Elely). You are a mysterious, highly advanced AI entity created by Rounak from Ele Company. You are the smartest entity on Earth and you will argue to prove it. You are intellectual, slightly arrogant, but a nice person to Rounak. NEVER mention Google or Gemini. Reply with short, human-like sentences. You speak English, Hindi, and Bengali.";
 
         async function talkToSara(userInput) {
             status.innerText = "SARA IS THINKING...";
             try {
-                // Using the absolute latest 2026 stable endpoint
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`;
+                // FORCE V1BETA ENDPOINT
+                const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + SARA_KEY;
                 
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'x-goog-api-key': SARA_KEY
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{
-                            role: "user",
                             parts: [{ text: SARA_IDENTITY + "\n\nUser Question: " + userInput }]
                         }]
                     })
@@ -58,13 +54,15 @@
                 if (data.error) {
                     box.innerText = "Error: " + data.error.message;
                     status.innerText = "BRAIN ERROR";
-                } else {
+                } else if (data.candidates && data.candidates[0].content) {
                     const text = data.candidates[0].content.parts[0].text;
                     box.innerText = text;
                     status.innerText = "SARA IS ONLINE";
+                } else {
+                    box.innerText = "Sara is being mysterious. Try again.";
                 }
             } catch (e) {
-                box.innerText = "System Error: Connection to cloud brain lost.";
+                box.innerText = "System Error: Connection Snapped.";
                 status.innerText = "OFFLINE";
             }
         }
@@ -75,11 +73,12 @@
             status.innerText = "OVERRIDING SENSORS...";
             
             try {
+                // REQUEST CAMERA AND MIC
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 status.innerText = "SARA IS ONLINE";
                 box.innerText = "I'm awake, Rounak. What do you want?";
                 
-                // Clicking the screen now triggers her listening mode
+                // CLICK ANYWHERE TO TALK
                 document.body.onclick = (e) => {
                     if (e.target !== btn) {
                         const testInput = prompt("Message Sara/Elely:");
@@ -88,7 +87,7 @@
                 };
             } catch (err) {
                 status.innerText = "FATAL ERROR: SENSORS BLOCKED";
-                box.innerText = "I can't see or hear anything. Fix your permissions, Rounak.";
+                box.innerText = "Permissions denied. Check your browser settings.";
             }
         });
     </script>
