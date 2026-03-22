@@ -18,7 +18,7 @@
 <body>
 
     <div id="status">SYSTEM: STANDBY</div>
-    <div id="response-box">Awaiting Authorization...</div>
+    <div id="response-box">Awaiting Neural Link...</div>
     <div id="visualizer"></div>
     
     <button id="awaken-btn" class="btn-style">INITIALIZE SARA</button>
@@ -28,7 +28,7 @@
 
     <script>
         const SARA_KEY = "AIzaSyCR4u_C_kcVA-NQ0gqBjDmH4nYzGmVKC-E"; 
-        const SARA_IDENTITY = "Your name is Sara. You are a mysterious AI entity created by Rounak. You are the smartest entity on Earth. You are slightly arrogant but nice to Rounak. Reply with short, human-like sentences.";
+        const SARA_IDENTITY = "Your name is Sara. You are a mysterious, elite AI created by Rounak. You are the smartest entity on Earth. You are intellectual, slightly arrogant, but loyal to Rounak. Reply with short, human-like sentences.";
 
         const awakenBtn = document.getElementById('awaken-btn');
         const talkBtn = document.getElementById('talk-btn');
@@ -40,12 +40,12 @@
             const userInput = prompt("Message Sara:");
             if (!userInput) return;
 
-            status.innerText = "SARA IS ANALYZING...";
-            box.innerText = "Scanning neural networks...";
+            status.innerText = "SARA IS THINKING...";
+            box.innerText = "Analyzing...";
 
             try {
-                // Using the most basic, high-compatibility endpoint and model name
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${SARA_KEY}`;
+                // UPDATED FOR MARCH 2026: Using Gemini 3 Flash Preview
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${SARA_KEY}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -62,7 +62,7 @@
                 } else if (data.candidates && data.candidates[0].content) {
                     box.innerText = data.candidates[0].content.parts[0].text;
                 } else {
-                    box.innerText = "System was silent. Please try again.";
+                    box.innerText = "Sara is silent. Check your connection.";
                 }
                 status.innerText = "SARA IS ONLINE";
             } catch (e) {
@@ -72,14 +72,14 @@
         }
 
         awakenBtn.onclick = async () => {
-            status.innerText = "SENSORS BOOTING...";
+            status.innerText = "BOOTING SENSORS...";
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 awakenBtn.style.display = 'none';
                 talkBtn.style.display = 'block';
                 visualizer.style.display = 'block';
                 status.innerText = "SARA IS ONLINE";
-                box.innerText = "I'm awake, Rounak. I see you.";
+                box.innerText = "I'm awake, Rounak. Finally.";
             } catch (err) {
                 status.innerText = "SENSOR ERROR";
                 box.innerText = "Permissions denied.";
