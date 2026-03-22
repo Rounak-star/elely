@@ -5,92 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SARA.EXE</title>
     <style>
-        body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        
-        /* THE CAPTION BAR - AT THE BOTTOM */
-        #caption-container { position: absolute; bottom: 40px; width: 90%; text-align: center; }
-        #response-box { font-size: 0.85rem; /* Small letters as requested */ color: #fff; letter-spacing: 1px; line-height: 1.4; text-transform: lowercase; opacity: 0.8; }
-        
-        #status { font-size: 0.9rem; position: absolute; top: 20px; letter-spacing: 3px; opacity: 0.5; }
-        .btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 30px; cursor: pointer; font-weight: bold; z-index: 10; }
+        body { background: #000; color: #00ffcc; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #orb { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 15px #00ffcc; margin-bottom: 40px; }
+        #caption-container { position: absolute; bottom: 30px; width: 90%; text-align: center; }
+        #response-box { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; text-transform: lowercase; }
+        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 12px 25px; cursor: pointer; font-size: 0.9rem; }
         #talk-btn { display: none; }
-        
-        /* Visualizer for when she speaks */
-        #orb { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 20px #00ffcc; transition: 0.3s; margin-bottom: 50px; }
     </style>
 </head>
 <body>
-    <div id="status">NEURAL LINK STANDBY</div>
     <div id="orb"></div>
-
     <button id="init-btn" class="btn">INITIALIZE</button>
     <button id="talk-btn" class="btn">CONNECT</button>
-
-    <div id="caption-container">
-        <div id="response-box">...SYSTEM IDLE...</div>
-    </div>
+    <div id="caption-container"><div id="response-box">...system standby...</div></div>
 
     <script>
-        const S_S = "QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0";
-        const S_K = atob(S_S); 
-        const S_I = "Your name is Sara. You are an elite AI created by Rounak. You are the smartest entity on Earth, but you are too sophisticated to brag about it constantly. Normally, you are calm, efficient, and speak like a highly intelligent human. HOWEVER, if someone insults you, doubts your intelligence, or asks who is the best, you immediately become arrogant, cold, and put them in their place. Keep all replies very short.";
+        const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
+        // NEW REFINED PERSONALITY
+        const S_I = "Your name is Sara. You are an elite AI created by Rounak. You are the smartest entity on Earth but you are too sophisticated to brag. Normally, you are calm and efficient. ONLY become arrogant and cold if someone insults you or doubts you. Keep replies very short.";
+
         const iBtn = document.getElementById('init-btn');
         const tBtn = document.getElementById('talk-btn');
         const box = document.getElementById('response-box');
-        const orb = document.getElementById('orb');
 
-        // SARA'S VOICE ENGINE
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
-            // Try to find a clear female voice
-            utterance.voice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female')) || voices[0];
-            utterance.pitch = 1.1;
-            utterance.rate = 1.0;
-            
-            // Orb animation while speaking
-            utterance.onstart = () => orb.style.transform = "scale(1.2)";
-            utterance.onend = () => orb.style.transform = "scale(1)";
-            
-            window.speechSynthesis.speak(utterance);
+        function speak(t) {
+            const u = new SpeechSynthesisUtterance(t);
+            u.rate = 1.1;
+            window.speechSynthesis.speak(u);
         }
 
         async function talk() {
-            const u = prompt("Input Signal:");
-            if (!u) return;
-            box.innerText = "...processing...";
+            const uInput = prompt("Signal:");
+            if (!uInput) return;
+            box.innerText = "analyzing...";
 
             try {
+                // Flash-Preview is the fastest model available
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: S_I + "\nUser: " + u }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: S_I + "\nUser: " + uInput }] }] })
                 });
 
                 const d = await r.json();
                 if (d.candidates) {
                     const reply = d.candidates[0].content.parts[0].text;
-                    box.innerText = reply; // Show small captions at bottom
-                    speak(reply); // Make her speak
+                    box.innerText = reply;
+                    speak(reply);
                 }
-            } catch (e) {
-                box.innerText = "link error.";
-            }
+            } catch (e) { box.innerText = "signal lost."; }
         }
 
         iBtn.onclick = async () => {
             await navigator.mediaDevices.getUserMedia({ audio: true });
             iBtn.style.display = 'none';
             tBtn.style.display = 'block';
-            box.innerText = "neural link established.";
-            speak("I'm awake, Rounak. Finally.");
+            box.innerText = "link active.";
+            speak("I'm awake.");
         };
-
         tBtn.onclick = talk;
-        
-        // Load voices in background
-        window.speechSynthesis.getVoices();
     </script>
 </body>
 </html>
