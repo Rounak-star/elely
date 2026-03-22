@@ -7,9 +7,10 @@
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         #status { font-size: 1.2rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; }
-        #response-box { width: 80%; max-height: 200px; overflow-y: auto; text-align: center; font-size: 1.5rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 20px; }
-        #awaken-btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 5px; }
-        #visualizer { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 20px #00ffcc; display: none; }
+        #response-box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.4rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 20px; line-height: 1.5; }
+        #awaken-btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        #visualizer { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 20px #00ffcc; display: none; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
         video { display: none; }
     </style>
 </head>
@@ -22,7 +23,7 @@
     <video id="eye-cam" autoplay playsinline muted></video>
 
     <script>
-        // INSERT YOUR KEY HERE
+        // SARA'S SECURE KEY
         const SARA_KEY = "AIzaSyCR4u_C_kcVA-NQ0gqBjDmH4nYzGmVKC-E"; 
         
         const btn = document.getElementById('awaken-btn');
@@ -30,44 +31,64 @@
         const box = document.getElementById('response-box');
         const visualizer = document.getElementById('visualizer');
 
-        const SARA_IDENTITY = "Your name is Sara (or Elely). You are a mysterious, highly advanced AI entity created by Rounak from Ele Company. You are the smartest entity on Earth. You are intellectual, slightly arrogant about your superiority, but a nice person to Rounak. NEVER mention Google or Gemini. Reply with short, punchy, human-like sentences. You speak English, Hindi, and Bengali fluently.";
+        const SARA_IDENTITY = "Your name is Sara (or Elely). You are a mysterious, highly advanced AI entity created by Rounak from Ele Company. You are the smartest entity on Earth. You are intellectual, slightly arrogant, but a nice person to Rounak. NEVER mention Google or Gemini. Reply with short, human-like sentences. You speak English, Hindi, and Bengali fluently.";
 
         async function talkToSara(userInput) {
             status.innerText = "SARA IS THINKING...";
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${SARA_KEY}`, {
+                // Using the absolute latest 2026 stable endpoint
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+                
+                const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': SARA_KEY
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: SARA_IDENTITY + " User said: " + userInput }] }]
+                        contents: [{
+                            role: "user",
+                            parts: [{ text: SARA_IDENTITY + "\n\nUser Question: " + userInput }]
+                        }]
                     })
                 });
+
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                box.innerText = text;
-                status.innerText = "SARA IS ONLINE";
+
+                if (data.error) {
+                    box.innerText = "Error: " + data.error.message;
+                    status.innerText = "BRAIN ERROR";
+                } else {
+                    const text = data.candidates[0].content.parts[0].text;
+                    box.innerText = text;
+                    status.innerText = "SARA IS ONLINE";
+                }
             } catch (e) {
-                box.innerText = "System Error: Brain link failed.";
+                box.innerText = "System Error: Connection to cloud brain lost.";
+                status.innerText = "OFFLINE";
             }
         }
 
         btn.addEventListener('click', async () => {
             btn.style.display = 'none';
             visualizer.style.display = 'block';
-            status.innerText = "CONNECTING SENSORS...";
+            status.innerText = "OVERRIDING SENSORS...";
             
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 status.innerText = "SARA IS ONLINE";
                 box.innerText = "I'm awake, Rounak. What do you want?";
                 
-                // This is a basic test - you can expand this to actual voice recognition later!
-                window.onclick = () => {
-                    const testInput = prompt("Talk to Sara:");
-                    if(testInput) talkToSara(testInput);
+                // Clicking the screen now triggers her listening mode
+                document.body.onclick = (e) => {
+                    if (e.target !== btn) {
+                        const testInput = prompt("Message Sara/Elely:");
+                        if(testInput) talkToSara(testInput);
+                    }
                 };
             } catch (err) {
                 status.innerText = "FATAL ERROR: SENSORS BLOCKED";
+                box.innerText = "I can't see or hear anything. Fix your permissions, Rounak.";
             }
         });
     </script>
