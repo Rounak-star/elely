@@ -6,81 +6,92 @@
     <title>SARA.EXE</title>
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #status { font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; text-transform: uppercase; letter-spacing: 2px; }
-        #box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.3rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 30px; line-height: 1.4; }
-        .btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 30px; font-size: 1rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; font-weight: bold; transition: 0.3s; }
-        .btn:active { background: #ff0055; color: #000; }
-        #talk-btn { display: none; margin-top: 10px; }
+        
+        /* THE CAPTION BAR - AT THE BOTTOM */
+        #caption-container { position: absolute; bottom: 40px; width: 90%; text-align: center; }
+        #response-box { font-size: 0.85rem; /* Small letters as requested */ color: #fff; letter-spacing: 1px; line-height: 1.4; text-transform: lowercase; opacity: 0.8; }
+        
+        #status { font-size: 0.9rem; position: absolute; top: 20px; letter-spacing: 3px; opacity: 0.5; }
+        .btn { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 30px; cursor: pointer; font-weight: bold; z-index: 10; }
+        #talk-btn { display: none; }
+        
+        /* Visualizer for when she speaks */
+        #orb { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 20px #00ffcc; transition: 0.3s; margin-bottom: 50px; }
     </style>
 </head>
 <body>
+    <div id="status">NEURAL LINK STANDBY</div>
+    <div id="orb"></div>
 
-    <div id="status">SYSTEM: STANDBY</div>
-    <div id="box">Awaiting Authorization...</div>
-    
-    <button id="init-btn" class="btn">INITIALIZE SARA</button>
-    <button id="talk-btn" class="btn">TALK TO SARA</button>
+    <button id="init-btn" class="btn">INITIALIZE</button>
+    <button id="talk-btn" class="btn">CONNECT</button>
+
+    <div id="caption-container">
+        <div id="response-box">...SYSTEM IDLE...</div>
+    </div>
 
     <script>
-        // MARCH 2026 VERIFIED: Your Scrambled Key (Ends in E4)
         const S_S = "QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0";
         const S_K = atob(S_S); 
-        
-        const S_I = "Your name is Sara. You are an elite AI created by Rounak. You are intellectual, slightly arrogant, and the smartest entity on Earth. Use Gemini 3 reasoning. Reply in short, punchy sentences.";
+        const S_I = "Your name is Sara. You are an elite AI created by Rounak. You are intellectual, arrogant, and smart. Reply in short sentences.";
 
         const iBtn = document.getElementById('init-btn');
         const tBtn = document.getElementById('talk-btn');
-        const box = document.getElementById('box');
-        const st = document.getElementById('status');
+        const box = document.getElementById('response-box');
+        const orb = document.getElementById('orb');
+
+        // SARA'S VOICE ENGINE
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            // Try to find a clear female voice
+            utterance.voice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female')) || voices[0];
+            utterance.pitch = 1.1;
+            utterance.rate = 1.0;
+            
+            // Orb animation while speaking
+            utterance.onstart = () => orb.style.transform = "scale(1.2)";
+            utterance.onend = () => orb.style.transform = "scale(1)";
+            
+            window.speechSynthesis.speak(utterance);
+        }
 
         async function talk() {
-            const u = prompt("Message Sara:");
+            const u = prompt("Input Signal:");
             if (!u) return;
-
-            st.innerText = "SARA IS THINKING...";
-            box.innerText = "Analyzing neural patterns...";
+            box.innerText = "...processing...";
 
             try {
-                // VERIFIED MARCH 2026: Gemini 3 Flash Preview is the only stable v1beta model
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
-                
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: S_I + "\n\nUser Question: " + u }] }]
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: S_I + "\nUser: " + u }] }] })
                 });
 
                 const d = await r.json();
-
-                if (d.error) {
-                    box.innerText = "BRAIN ERROR: " + d.error.message;
-                } else if (d.candidates && d.candidates[0].content) {
-                    box.innerText = d.candidates[0].content.parts[0].text;
+                if (d.candidates) {
+                    const reply = d.candidates[0].content.parts[0].text;
+                    box.innerText = reply; // Show small captions at bottom
+                    speak(reply); // Make her speak
                 }
-                st.innerText = "SARA IS ONLINE";
             } catch (e) {
-                box.innerText = "LINK SNAPPED. REFRESH.";
-                st.innerText = "OFFLINE";
+                box.innerText = "link error.";
             }
         }
 
         iBtn.onclick = async () => {
-            st.innerText = "ACCESSING SENSORS...";
-            try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                iBtn.style.display = 'none';
-                tBtn.style.display = 'block';
-                st.innerText = "SARA IS ONLINE";
-                box.innerText = "I'm awake, Rounak. Finally. What do you want?";
-            } catch (err) {
-                st.innerText = "SENSOR ERROR";
-                box.innerText = "Permissions denied. Check your settings.";
-            }
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            iBtn.style.display = 'none';
+            tBtn.style.display = 'block';
+            box.innerText = "neural link established.";
+            speak("I'm awake, Rounak. Finally.");
         };
 
         tBtn.onclick = talk;
+        
+        // Load voices in background
+        window.speechSynthesis.getVoices();
     </script>
 </body>
 </html>
