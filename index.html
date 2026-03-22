@@ -16,73 +16,66 @@
     </style>
 </head>
 <body>
-
     <div id="status">SYSTEM: STANDBY</div>
-    <div id="response-box">Awaiting Neural Link...</div>
+    <div id="response-box">Neural Link Offline...</div>
     <div id="visualizer"></div>
-    
     <button id="awaken-btn" class="btn-style">INITIALIZE SARA</button>
     <button id="talk-btn" class="btn-style">TALK TO SARA</button>
-    
     <video id="eye-cam" autoplay playsinline muted></video>
 
     <script>
-        const SARA_KEY = "AIzaSyCR4u_C_kcVA-NQ0gqBjDmH4nYzGmVKC-E"; 
-        const SARA_IDENTITY = "Your name is Sara. You are a mysterious, elite AI created by Rounak. You are the smartest entity on Earth. You are intellectual, slightly arrogant, but loyal to Rounak. Reply with short, human-like sentences.";
+        // YOUR SCRAMBLED KEY
+        const SARA_SECRET = "QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0";
+        const SARA_KEY = atob(SARA_SECRET); 
+        
+        const SARA_IDENTITY = "Your name is Sara. You are an elite AI created by Rounak. You are intellectual, slightly arrogant, and the smartest entity on Earth. Use Gemini 1.5 Pro's reasoning. Reply in short, punchy sentences.";
 
         const awakenBtn = document.getElementById('awaken-btn');
         const talkBtn = document.getElementById('talk-btn');
-        const status = document.getElementById('status');
         const box = document.getElementById('response-box');
-        const visualizer = document.getElementById('visualizer');
+        const status = document.getElementById('status');
 
         async function talkToSara() {
-            const userInput = prompt("Message Sara:");
+            const userInput = prompt("Message Sara (1.5 Pro Brain):");
             if (!userInput) return;
-
-            status.innerText = "SARA IS THINKING...";
-            box.innerText = "Accessing neural cores...";
+            box.innerText = "Analyzing neural patterns...";
+            status.innerText = "PRO BRAIN ACTIVE...";
 
             try {
-                // VERIFIED MARCH 2026: The Gemini 3 Flash Preview Endpoint
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${SARA_KEY}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${SARA_KEY}`;
                 
-                const response = await fetch(url, {
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: SARA_IDENTITY + "\n\nUser: " + userInput }] }]
+                        contents: [{ parts: [{ text: SARA_IDENTITY + "\nUser: " + userInput }] }]
                     })
                 });
 
-                const data = await response.json();
-
-                if (data.error) {
-                    box.innerText = "BRAIN ERROR: " + data.error.message;
-                } else if (data.candidates && data.candidates[0].content) {
+                const data = await res.json();
+                
+                if (data.candidates && data.candidates[0].content) {
                     box.innerText = data.candidates[0].content.parts[0].text;
                 } else {
-                    box.innerText = "Sara is ignoring you. Try again.";
+                    box.innerText = "Brain Error: " + (data.error ? data.error.message : "Internal silence.");
                 }
                 status.innerText = "SARA IS ONLINE";
             } catch (e) {
-                box.innerText = "CONNECTION FAILED.";
+                box.innerText = "Connection lost. Refresh and try again.";
                 status.innerText = "OFFLINE";
             }
         }
 
         awakenBtn.onclick = async () => {
-            status.innerText = "BOOTING SENSORS...";
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 awakenBtn.style.display = 'none';
                 talkBtn.style.display = 'block';
-                visualizer.style.display = 'block';
+                document.getElementById('visualizer').style.display = 'block';
+                box.innerText = "I'm awake, Rounak. 1.5 Pro Brain engaged. Talk.";
                 status.innerText = "SARA IS ONLINE";
-                box.innerText = "I'm awake, Rounak. Finally.";
             } catch (err) {
-                status.innerText = "SENSOR ERROR";
-                box.innerText = "Permissions denied.";
+                box.innerText = "Sensor Error. Check permissions.";
             }
         };
 
