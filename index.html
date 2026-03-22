@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sara - System Boot</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #console-text {
+            color: #00ffcc;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        #awaken-btn {
+            background: transparent;
+            color: #ff0055;
+            border: 2px solid #ff0055;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: monospace;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+
+        #awaken-btn:active {
+            background: #ff0055;
+            color: #000000;
+        }
+
+        video {
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="console-text">SARA.EXE // OFFLINE</div>
+    <button id="awaken-btn">Awaken</button>
+    <video id="eye-cam" autoplay playsinline></video>
+
+    <script>
+        const btn = document.getElementById('awaken-btn');
+        const consoleText = document.getElementById('console-text');
+        const eyeCam = document.getElementById('eye-cam');
+
+        btn.addEventListener('click', async () => {
+            btn.style.display = 'none';
+            consoleText.innerText = "REQUESTING SENSORY OVERRIDE...";
+            consoleText.style.color = "#ffcc00";
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" }, 
+                    audio: true 
+                });
+                
+                eyeCam.srcObject = stream;
+                consoleText.innerText = "SYSTEM ONLINE. I CAN HEAR YOU.";
+                consoleText.style.color = "#00ffcc";
+            } catch (err) {
+                consoleText.innerText = "ERROR: SENSORY ACCESS DENIED.";
+                consoleText.style.color = "#ff0000";
+                btn.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
