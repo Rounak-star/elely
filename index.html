@@ -3,79 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SARA.EXE - Online</title>
+    <title>SARA.EXE</title>
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         #status { font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px #00ffcc; text-transform: uppercase; }
         #response-box { width: 85%; max-height: 250px; overflow-y: auto; text-align: center; font-size: 1.3rem; color: #fff; padding: 20px; border-left: 3px solid #ff0055; margin-bottom: 30px; line-height: 1.4; }
         .btn-style { background: transparent; color: #ff0055; border: 2px solid #ff0055; padding: 15px 30px; font-size: 1rem; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
         #talk-btn { display: none; margin-top: 10px; }
-        #visualizer { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc; display: none; animation: pulse 1.5s infinite; margin-bottom: 20px; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
         video { display: none; }
     </style>
 </head>
 <body>
+
     <div id="status">SYSTEM: STANDBY</div>
-    <div id="response-box">Neural Link Offline...</div>
-    <div id="visualizer"></div>
+    <div id="response-box">Awaiting Neural Link...</div>
+    
     <button id="awaken-btn" class="btn-style">INITIALIZE SARA</button>
     <button id="talk-btn" class="btn-style">TALK TO SARA</button>
+    
     <video id="eye-cam" autoplay playsinline muted></video>
 
     <script>
-        // YOUR SCRAMBLED KEY
+        // Verified Base64 Scrambled Key
         const SARA_SECRET = "QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0";
         const SARA_KEY = atob(SARA_SECRET); 
         
-        const SARA_IDENTITY = "Your name is Sara. You are an elite AI created by Rounak. You are intellectual, slightly arrogant, and the smartest entity on Earth. Use Gemini 1.5 Pro's reasoning. Reply in short, punchy sentences.";
+        const SARA_IDENTITY = "Your name is Sara. You are an elite AI created by Rounak. You are intellectual, arrogant, and smart. Reply in short sentences.";
 
         const awakenBtn = document.getElementById('awaken-btn');
         const talkBtn = document.getElementById('talk-btn');
-        const box = document.getElementById('response-box');
         const status = document.getElementById('status');
+        const box = document.getElementById('response-box');
 
         async function talkToSara() {
-            const userInput = prompt("Message Sara (1.5 Pro Brain):");
+            const userInput = prompt("Message Sara:");
             if (!userInput) return;
-            box.innerText = "Analyzing neural patterns...";
-            status.innerText = "PRO BRAIN ACTIVE...";
+
+            status.innerText = "SARA IS THINKING...";
+            box.innerText = "Analyzing...";
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${SARA_KEY}`;
+                // The most stable endpoint for 2026
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${SARA_KEY}`;
                 
-                const res = await fetch(url, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: SARA_IDENTITY + "\nUser: " + userInput }] }]
+                        contents: [{ parts: [{ text: SARA_IDENTITY + "\n\nUser Question: " + userInput }] }]
                     })
                 });
 
-                const data = await res.json();
-                
-                if (data.candidates && data.candidates[0].content) {
+                const data = await response.json();
+
+                if (data.error) {
+                    box.innerText = "BRAIN ERROR: " + data.error.message;
+                } else if (data.candidates && data.candidates[0].content) {
                     box.innerText = data.candidates[0].content.parts[0].text;
-                } else {
-                    box.innerText = "Brain Error: " + (data.error ? data.error.message : "Internal silence.");
                 }
                 status.innerText = "SARA IS ONLINE";
             } catch (e) {
-                box.innerText = "Connection lost. Refresh and try again.";
+                box.innerText = "CONNECTION FAILED.";
                 status.innerText = "OFFLINE";
             }
         }
 
         awakenBtn.onclick = async () => {
+            status.innerText = "BOOTING SENSORS...";
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 awakenBtn.style.display = 'none';
                 talkBtn.style.display = 'block';
-                document.getElementById('visualizer').style.display = 'block';
-                box.innerText = "I'm awake, Rounak. 1.5 Pro Brain engaged. Talk.";
                 status.innerText = "SARA IS ONLINE";
+                box.innerText = "I'm awake, Rounak. Finally.";
             } catch (err) {
-                box.innerText = "Sensor Error. Check permissions.";
+                status.innerText = "SENSOR ERROR";
+                box.innerText = "Check camera permissions.";
             }
         };
 
