@@ -41,10 +41,10 @@
             if (!userInput) return;
 
             status.innerText = "SARA IS THINKING...";
-            box.innerText = "Analyzing...";
+            box.innerText = "Accessing neural cores...";
 
             try {
-                // UPDATED FOR MARCH 2026: Using Gemini 3 Flash Preview
+                // VERIFIED MARCH 2026: The Gemini 3 Flash Preview Endpoint
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${SARA_KEY}`;
                 
                 const response = await fetch(url, {
@@ -62,7 +62,7 @@
                 } else if (data.candidates && data.candidates[0].content) {
                     box.innerText = data.candidates[0].content.parts[0].text;
                 } else {
-                    box.innerText = "Sara is silent. Check your connection.";
+                    box.innerText = "Sara is ignoring you. Try again.";
                 }
                 status.innerText = "SARA IS ONLINE";
             } catch (e) {
