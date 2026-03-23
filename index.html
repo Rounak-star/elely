@@ -6,51 +6,40 @@
     <title>SARA.EXE</title>
     <style>
         body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        
-        /* The Eye */
-        #orb { 
-            width: 100px; height: 100px; border-radius: 50%; 
-            background: radial-gradient(circle, #00ffcc 0%, transparent 70%); 
-            box-shadow: 0 0 25px #00ffcc; transition: 0.5s; margin-bottom: 40px; cursor: pointer; 
-        }
-
+        #orb { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 25px #00ffcc; transition: 0.5s; margin-bottom: 40px; cursor: pointer; }
         .vibrate { animation: shake 0.1s infinite; box-shadow: 0 0 50px #ff0055 !important; background: radial-gradient(circle, #ff0055 0%, transparent 70%) !important; }
         @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 2px); } }
-
-        /* Controls */
-        #controls { display: flex; gap: 15px; margin-bottom: 20px; }
-        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 10px 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-        
-        /* Mic Status Colors */
-        .mic-on { color: #00ffcc !important; border-color: #00ffcc !important; }
-        .mic-off { color: #555 !important; border-color: #555 !important; }
-
+        #controls { display: flex; gap: 10px; margin-bottom: 20px; z-index: 10; }
+        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 10px 15px; cursor: pointer; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .mic-on { color: #00ffcc; border-color: #00ffcc; }
+        .mic-off { color: #444; border-color: #444; }
         #caption-container { position: absolute; bottom: 40px; width: 85%; text-align: center; }
-        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.7; min-height: 40px; }
-        
+        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.8; min-height: 40px; }
         #init-screen { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="init-screen">
-        <button id="init-btn" class="btn">INITIALIZE SARA</button>
+        <button id="init-btn" class="btn" style="padding: 20px 40px; font-size: 1.2rem;">BOOT SARA.EXE</button>
     </div>
 
-    <div id="orb"></div>
+    <div id="orb" title="Tap to Speak"></div>
 
     <div id="controls">
-        <button id="mic-toggle" class="btn mic-on">MIC: ACTIVE</button>
-        <button id="type-btn" class="btn">MANUAL INPUT</button>
+        <button id="mic-toggle" class="btn mic-on">MIC: ON</button>
+        <button id="type-btn" class="btn">TYPE</button>
+        <button id="clear-btn" class="btn" style="color:#444; border-color:#444;">WIPE</button>
     </div>
 
     <div id="caption-container">
-        <div id="response-box">...system standing by...</div>
+        <div id="response-box">...system online...</div>
     </div>
 
     <script>
+        // MARCH 2026 KEY
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite and arrogant. You understand English and Bengali. You remember topics. Keep replies short." }] };
+        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite, intellectual, and arrogant. You understand English and Bengali. Keep replies very short. Never forget the topic." }] };
 
         let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
         let micEnabled = true;
@@ -63,77 +52,71 @@
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
             u.rate = 1.1;
-            if(/[\u0980-\u09FF]/.test(t)) { u.lang = 'bn-IN'; } else { u.lang = 'en-GB'; }
+            u.lang = /[\u0980-\u09FF]/.test(t) ? 'bn-IN' : 'en-GB';
             u.onstart = () => orb.classList.add('vibrate');
             u.onend = () => orb.classList.remove('vibrate');
             window.speechSynthesis.speak(u);
         }
 
-        // SPEECH RECOGNITION SETUP
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const listen = new Recognition();
-        listen.lang = 'en-IN';
-
-        listen.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
-            box.innerText = "you: " + transcript;
-            processSignal(transcript);
-        };
-
         async function processSignal(uInput) {
+            if (!uInput) return;
+            box.innerText = "...processing...";
             chatHistory.push({ role: "user", parts: [{ text: uInput }] });
+
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ systemInstruction: S_I, contents: chatHistory.slice(-40) })
+                    body: JSON.stringify({ systemInstruction: S_I, contents: chatHistory.slice(-20) })
                 });
+                
                 const d = await r.json();
-                if (d.candidates) {
+                if (d.candidates && d.candidates[0].content) {
                     const reply = d.candidates[0].content.parts[0].text;
                     box.innerText = reply;
                     chatHistory.push({ role: "model", parts: [{ text: reply }] });
                     localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
                     speak(reply);
+                } else if (d.error) {
+                    box.innerText = "Error: " + d.error.code + " - " + d.error.message;
                 }
-            } catch (e) { box.innerText = "signal error."; }
+            } catch (e) { box.innerText = "Connection lost."; }
         }
 
-        // MIC TOGGLE LOGIC
+        // Recognition Setup
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (Recognition) {
+            const listen = new Recognition();
+            listen.lang = 'en-IN';
+            listen.onresult = (e) => processSignal(e.results[0][0].transcript);
+            listen.onerror = (e) => { box.innerText = "Mic Error: " + e.error; orb.classList.remove('vibrate'); };
+            
+            orb.onclick = () => { if(micEnabled) { listen.start(); box.innerText = "listening..."; } };
+        }
+
         micBtn.onclick = () => {
             micEnabled = !micEnabled;
-            if (micEnabled) {
-                micBtn.innerText = "MIC: ACTIVE";
-                micBtn.className = "btn mic-on";
-            } else {
-                micBtn.innerText = "MIC: KILLED";
-                micBtn.className = "btn mic-off";
-                window.speechSynthesis.cancel(); // Stop talking if mic is killed
-            }
+            micBtn.innerText = micEnabled ? "MIC: ON" : "MIC: OFF";
+            micBtn.className = micEnabled ? "btn mic-on" : "btn mic-off";
         };
 
-        // INITIALIZE
-        document.getElementById('init-btn').onclick = async () => {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-            document.getElementById('init-screen').style.display = 'none';
-            speak("Systems ready.");
-        };
-
-        // TRIGGER LISTENING (Only if enabled)
-        orb.onclick = () => { 
-            if (micEnabled) {
-                listen.start(); 
-                box.innerText = "listening..."; 
-            } else {
-                box.innerText = "mic is killed. use manual input.";
-            }
-        };
-
-        // MANUAL INPUT BACKUP
         document.getElementById('type-btn').onclick = () => {
-            const manual = prompt("Type your signal:");
-            if (manual) processSignal(manual);
+            const input = prompt("Enter signal:");
+            if (input) processSignal(input);
+        };
+
+        document.getElementById('clear-btn').onclick = () => {
+            localStorage.clear();
+            location.reload();
+        };
+
+        document.getElementById('init-btn').onclick = async () => {
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                document.getElementById('init-screen').style.display = 'none';
+                speak("I am operational.");
+            } catch (err) { alert("Microphone access required."); }
         };
     </script>
 </body>
