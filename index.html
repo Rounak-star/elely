@@ -3,80 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SARA.EXE</title>
+    <title>SARA.EXE // ANIME</title>
     <style>
-        body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #orb { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 25px #00ffcc; transition: 0.5s; margin-bottom: 40px; cursor: pointer; }
-        .vibrate { animation: shake 0.1s infinite; box-shadow: 0 0 50px #ff0055 !important; background: radial-gradient(circle, #ff0055 0%, transparent 70%) !important; }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 2px); } }
-        #controls { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 10px 15px; cursor: pointer; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
-        .mic-on { color: #00ffcc; border-color: #00ffcc; }
-        .mic-off { color: #444; border-color: #444; }
-        #caption-container { position: absolute; bottom: 40px; width: 85%; text-align: center; }
-        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.8; min-height: 40px; }
-        #init-screen { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        body { background: #050505; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100vh; margin: 0; overflow: hidden; }
+        
+        /* THE AVATAR CONTAINER */
+        #avatar-container {
+            position: absolute;
+            bottom: 100px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        #sara-avatar {
+            height: 450px; /* Adjust based on your image */
+            filter: drop-shadow(0 0 15px #00ffcc);
+            transition: transform 0.1s;
+        }
+
+        /* Talking Animation */
+        .talking {
+            animation: bounce 0.3s infinite;
+            filter: drop-shadow(0 0 30px #ff0055) !important;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        #caption-container { width: 100%; background: rgba(0,0,0,0.8); padding: 20px 0; border-top: 1px solid #333; z-index: 10; }
+        #response-box { font-size: 0.9rem; color: #fff; text-align: center; letter-spacing: 1px; min-height: 30px; padding: 0 20px; }
+
+        #controls { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { background: rgba(0,0,0,0.5); color: #ff0055; border: 1px solid #ff0055; padding: 10px; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
+        
+        #init-screen { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="init-screen">
-        <button id="init-btn" class="btn" style="padding: 20px 40px; font-size: 1.2rem;">REBOOT SARA</button>
+        <h1 style="letter-spacing:10px; font-size:1.5rem;">SARA_SYSTEM</h1>
+        <button id="init-btn" class="btn" style="padding: 20px 40px; font-size: 1rem;">WAKE UP</button>
     </div>
 
-    <div id="orb"></div>
+    <div id="avatar-container">
+        <img id="sara-avatar" src="https://i.ibb.co/Lkhm7vD/anime-girl-transparent.png" alt="SARA">
+    </div>
 
     <div id="controls">
-        <button id="mic-toggle" class="btn mic-on">MIC: ON</button>
+        <button id="mic-btn" class="btn" style="color:#00ffcc; border-color:#00ffcc;">TAP TO TALK</button>
         <button id="type-btn" class="btn">TYPE</button>
-        <button id="clear-btn" class="btn" style="color:#444; border-color:#444;">WIPE</button>
+        <button id="wipe-btn" class="btn" style="color:#444; border-color:#444;">WIPE</button>
     </div>
 
     <div id="caption-container">
-        <div id="response-box">...link stable...</div>
+        <div id="response-box">system initialized...</div>
     </div>
 
     <script>
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite and arrogant. Understand English and Bengali. Use very short, sharp replies." }] };
+        const S_I = { parts: [{ text: "Your name is Sara. You are an elite, arrogant anime-style AI created by Rounak. Speak like a genius who is slightly bored by humans. Very short replies." }] };
 
         let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
-        let micEnabled = true;
         let isProcessing = false;
 
-        const orb = document.getElementById('orb');
+        const avatar = document.getElementById('sara-avatar');
         const box = document.getElementById('response-box');
-        const tBtn = document.getElementById('type-btn');
 
         function speak(t) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
             u.rate = 1.1;
             u.lang = /[\u0980-\u09FF]/.test(t) ? 'bn-IN' : 'en-GB';
-            u.onstart = () => orb.classList.add('vibrate');
-            u.onend = () => { orb.classList.remove('vibrate'); isProcessing = false; };
+            
+            u.onstart = () => avatar.classList.add('talking');
+            u.onend = () => { avatar.classList.remove('talking'); isProcessing = false; };
+            
             window.speechSynthesis.speak(u);
         }
 
-        async function processSignal(uInput) {
+        async function process(uInput) {
             if (!uInput || isProcessing) return;
             isProcessing = true;
-            box.innerText = "...processing...";
+            box.innerText = "...";
             chatHistory.push({ role: "user", parts: [{ text: uInput }] });
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
-                const r = await fetch(url, {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        systemInstruction: S_I, 
-                        // Reduced history to 15 messages for speed/quota safety
-                        contents: chatHistory.slice(-15) 
-                    })
+                    body: JSON.stringify({ systemInstruction: S_I, contents: chatHistory.slice(-15) })
                 });
-                
                 const d = await r.json();
                 if (d.candidates) {
                     const reply = d.candidates[0].content.parts[0].text;
@@ -84,27 +104,27 @@
                     chatHistory.push({ role: "model", parts: [{ text: reply }] });
                     localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
                     speak(reply);
-                } else if (d.error && d.error.code === 429) {
-                    box.innerText = "quota exceeded. wait 1 minute.";
-                    isProcessing = false;
                 }
-            } catch (e) { box.innerText = "signal error."; isProcessing = false; }
+            } catch (e) { box.innerText = "connection error."; isProcessing = false; }
         }
 
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (Recognition) {
-            const listen = new Recognition();
-            listen.lang = 'en-IN';
-            listen.onresult = (e) => processSignal(e.results[0][0].transcript);
-            listen.onerror = () => { isProcessing = false; };
-            
-            orb.onclick = () => { 
-                if(micEnabled && !isProcessing) { 
-                    listen.start(); 
-                    box.innerText = "listening..."; 
-                } 
-            };
-        }
+        const listen = new Recognition();
+        listen.lang = 'en-IN';
+        listen.onresult = (e) => process(e.results[0][0].transcript);
+
+        document.getElementById('mic-btn').onclick = () => { if(!isProcessing) { listen.start(); box.innerText = "listening..."; } };
+        document.getElementById('type-btn').onclick = () => { const i = prompt("Signal:"); if(i) process(i); };
+        document.getElementById('wipe-btn').onclick = () => { localStorage.clear(); location.reload(); };
+        
+        document.getElementById('init-btn').onclick = async () => {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('init-screen').style.display = 'none';
+            speak("I'm here, Rounak. Try not to bore me.");
+        };
+    </script>
+</body>
+</html>
 
         document.getElementById('mic-toggle').onclick = (e) => {
             micEnabled = !micEnabled;
