@@ -5,93 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SARA.EXE</title>
     <style>
-        body { background: #000; color: #00ffcc; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #orb { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 15px #00ffcc; margin-bottom: 40px; }
-        #caption-container { position: absolute; bottom: 30px; width: 90%; text-align: center; }
-        #response-box { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; text-transform: lowercase; }
-        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 12px 25px; cursor: pointer; font-size: 0.9rem; margin: 5px; }
-        #talk-btn { display: none; }
+        /* Modern Minimalist Aesthetic */
+        body { 
+            background: #000; 
+            color: #00ffcc; 
+            font-family: 'Courier New', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden; 
+        }
+
+        /* The Glowing Core */
+        #orb { 
+            width: 80px; 
+            height: 80px; 
+            border-radius: 50%; 
+            background: radial-gradient(circle, #00ffcc 0%, transparent 70%); 
+            box-shadow: 0 0 20px #00ffcc; 
+            transition: all 0.3s ease;
+            margin-bottom: 50px;
+        }
+
+        /* Small Bottom Captions */
+        #caption-container { 
+            position: absolute; 
+            bottom: 40px; 
+            width: 85%; 
+            text-align: center; 
+        }
+
+        #response-box { 
+            font-size: 0.85rem; 
+            color: #fff; 
+            letter-spacing: 1px; 
+            line-height: 1.5; 
+            text-transform: lowercase; 
+            opacity: 0.8;
+            min-height: 40px;
+        }
+
+        /* Controls */
+        .btn { 
+            background: transparent; 
+            color: #ff0055; 
+            border: 1px solid #ff0055; 
+            padding: 12px 25px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            text-transform: uppercase;
+            font-weight: bold;
+            margin: 10px;
+            letter-spacing: 2px;
+        }
+
+        #talk-btn, #clear-btn { display: none; }
+
+        #status {
+            position: absolute;
+            top: 20px;
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            opacity: 0.4;
+        }
     </style>
 </head>
 <body>
+
+    <div id="status">NEURAL LINK: STANDBY</div>
     <div id="orb"></div>
-    <button id="init-btn" class="btn">INITIALIZE</button>
+
+    <button id="init-btn" class="btn">INITIALIZE SARA</button>
     <div id="controls">
         <button id="talk-btn" class="btn">CONNECT</button>
-        <button id="clear-btn" class="btn" style="display:none; border-color:#555; color:#555;">WIPE MEMORY</button>
+        <button id="clear-btn" class="btn" style="border-color:#444; color:#444;">WIPE MEMORY</button>
     </div>
-    <div id="caption-container"><div id="response-box">...system standby...</div></div>
+
+    <div id="caption-container">
+        <div id="response-box">...awaiting authorization...</div>
+    </div>
 
     <script>
+        // MARCH 2026 VERIFIED KEY & IDENTITY
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = "Your name is Sara. Created by Rounak. You are elite and smart. You have a long-term memory of every interaction with Rounak. If he repeats himself, get annoyed. If he asks 'do you remember X', recall it from history. Be quietly arrogant. Keep replies short.";
+        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak from Elely. You are the smartest entity on Earth. You are intellectual, arrogant, and refined. You remember everything Rounak says. Normally calm, but if insulted or spammed with the same word, get annoyed and cold. Keep replies very short." }] };
 
-        // Load existing memory from phone storage, or start fresh
+        // Load Conversation History
         let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
 
         const iBtn = document.getElementById('init-btn');
         const tBtn = document.getElementById('talk-btn');
         const cBtn = document.getElementById('clear-btn');
         const box = document.getElementById('response-box');
+        const orb = document.getElementById('orb');
+        const st = document.getElementById('status');
 
+        // Voice Engine
         function speak(t) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
-            u.rate = 1.1;
+            u.rate = 1.1; 
+            u.pitch = 1.0;
+            
+            u.onstart = () => { orb.style.boxShadow = "0 0 40px #ff0055"; orb.style.background = "radial-gradient(circle, #ff0055 0%, transparent 70%)"; };
+            u.onend = () => { orb.style.boxShadow = "0 0 20px #00ffcc"; orb.style.background = "radial-gradient(circle, #00ffcc 0%, transparent 70%)"; };
+            
             window.speechSynthesis.speak(u);
         }
 
         async function talk() {
-            const uInput = prompt("Signal:");
+            const uInput = prompt("Signal to Sara:");
             if (!uInput) return;
-            box.innerText = "analyzing history...";
 
+            box.innerText = "...analyzing history...";
+            st.innerText = "PROMPTING NEURAL CORE...";
+
+            // Push User Message to Memory
             chatHistory.push({ role: "user", parts: [{ text: uInput }] });
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
+                
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        contents: chatHistory,
-                        systemInstruction: { parts: [{ text: S_I }] } 
+                        systemInstruction: S_I,
+                        contents: chatHistory 
                     })
                 });
 
                 const d = await r.json();
-                if (d.candidates) {
+                
+                if (d.candidates && d.candidates[0].content) {
                     const reply = d.candidates[0].content.parts[0].text;
                     box.innerText = reply;
                     
+                    // Push AI Response to Memory
                     chatHistory.push({ role: "model", parts: [{ text: reply }] });
                     
-                    // SAVE TO PHONE STORAGE
+                    // Save to LocalStorage
                     localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
                     
                     speak(reply);
+                    st.innerText = "LINK ACTIVE";
+                } else {
+                    box.innerText = "error: brain rejection.";
                 }
-            } catch (e) { box.innerText = "signal lost."; }
+            } catch (e) { 
+                box.innerText = "error: signal snapped."; 
+                st.innerText = "OFFLINE";
+            }
         }
 
         iBtn.onclick = async () => {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-            iBtn.style.display = 'none';
-            tBtn.style.display = 'inline-block';
-            cBtn.style.display = 'inline-block';
-            box.innerText = "neural link established.";
-            speak("I remember you, Rounak.");
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                iBtn.style.display = 'none';
+                tBtn.style.display = 'inline-block';
+                cBtn.style.display = 'inline-block';
+                st.innerText = "NEURAL LINK ESTABLISHED";
+                
+                const welcome = chatHistory.length > 0 ? "I remember you, Rounak." : "I'm awake, Rounak.";
+                box.innerText = welcome.toLowerCase();
+                speak(welcome);
+            } catch (err) {
+                box.innerText = "sensor error: allow microphone.";
+            }
         };
 
         tBtn.onclick = talk;
 
-        // Reset memory button (for when she gets too annoying)
         cBtn.onclick = () => {
-            if(confirm("Wipe my memory?")) {
+            if(confirm("Wipe Sara's memory?")) {
                 localStorage.removeItem('sara_memory');
                 chatHistory = [];
                 box.innerText = "memory purged.";
-                speak("I've forgotten everything. Who are you again?");
+                speak("Who are you again?");
             }
         };
     </script>
