@@ -5,185 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SARA.EXE</title>
     <style>
-        body { 
-            background: #000; 
-            color: #00ffcc; 
-            font-family: 'Courier New', monospace; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-            overflow: hidden; 
-        }
-
-        /* The Glowing Core */
+        body { background: #000; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        
+        /* The Eye */
         #orb { 
-            width: 90px; 
-            height: 90px; 
-            border-radius: 50%; 
+            width: 100px; height: 100px; border-radius: 50%; 
             background: radial-gradient(circle, #00ffcc 0%, transparent 70%); 
-            box-shadow: 0 0 20px #00ffcc; 
-            transition: all 0.5s ease;
-            margin-bottom: 60px;
+            box-shadow: 0 0 25px #00ffcc; transition: 0.5s; margin-bottom: 40px; cursor: pointer; 
         }
 
-        /* Color States */
-        .speaking {
-            background: radial-gradient(circle, #ff0055 0%, transparent 70%) !important;
-            box-shadow: 0 0 50px #ff0055 !important;
-        }
+        .vibrate { animation: shake 0.1s infinite; box-shadow: 0 0 50px #ff0055 !important; background: radial-gradient(circle, #ff0055 0%, transparent 70%) !important; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 2px); } }
 
-        /* Small Bottom Captions */
-        #caption-container { 
-            position: absolute; 
-            bottom: 40px; 
-            width: 85%; 
-            text-align: center; 
-        }
+        /* Controls */
+        #controls { display: flex; gap: 15px; margin-bottom: 20px; }
+        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 10px 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Mic Status Colors */
+        .mic-on { color: #00ffcc !important; border-color: #00ffcc !important; }
+        .mic-off { color: #555 !important; border-color: #555 !important; }
 
-        #response-box { 
-            font-size: 0.85rem; 
-            color: #fff; 
-            letter-spacing: 1px; 
-            line-height: 1.5; 
-            text-transform: lowercase; 
-            opacity: 0.7;
-            min-height: 40px;
-        }
-
-        .btn { 
-            background: transparent; 
-            color: #ff0055; 
-            border: 1px solid #ff0055; 
-            padding: 12px 25px; 
-            cursor: pointer; 
-            font-size: 0.9rem; 
-            text-transform: uppercase;
-            font-weight: bold;
-            margin: 10px;
-            letter-spacing: 2px;
-        }
-
-        #talk-btn, #clear-btn { display: none; }
-
-        #status {
-            position: absolute;
-            top: 20px;
-            font-size: 0.7rem;
-            letter-spacing: 4px;
-            opacity: 0.4;
-        }
+        #caption-container { position: absolute; bottom: 40px; width: 85%; text-align: center; }
+        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.7; min-height: 40px; }
+        
+        #init-screen { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
-    <div id="status">NEURAL LINK: STANDBY</div>
+    <div id="init-screen">
+        <button id="init-btn" class="btn">INITIALIZE SARA</button>
+    </div>
+
     <div id="orb"></div>
 
-    <button id="init-btn" class="btn">INITIALIZE SARA</button>
     <div id="controls">
-        <button id="talk-btn" class="btn">CONNECT</button>
-        <button id="clear-btn" class="btn" style="border-color:#444; color:#444;">PURGE DATA</button>
+        <button id="mic-toggle" class="btn mic-on">MIC: ACTIVE</button>
+        <button id="type-btn" class="btn">MANUAL INPUT</button>
     </div>
 
     <div id="caption-container">
-        <div id="response-box">...offline...</div>
+        <div id="response-box">...system standing by...</div>
     </div>
 
     <script>
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are the smartest AI. You are intellectual, refined, and arrogant. You have an eternal memory and never forget topics. Keep replies short and sharp." }] };
+        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite and arrogant. You understand English and Bengali. You remember topics. Keep replies short." }] };
 
         let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
+        let micEnabled = true;
 
-        const iBtn = document.getElementById('init-btn');
-        const tBtn = document.getElementById('talk-btn');
-        const cBtn = document.getElementById('clear-btn');
-        const box = document.getElementById('response-box');
         const orb = document.getElementById('orb');
-        const st = document.getElementById('status');
+        const box = document.getElementById('response-box');
+        const micBtn = document.getElementById('mic-toggle');
 
         function speak(t) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
-            u.rate = 1.1; 
-            
-            // Visual Trigger: Turn Pink
-            orb.classList.add('speaking');
-            
-            // Visual Reset: Turn back after a delay (based on text length)
-            const speakTime = (t.length * 65) + 500; // Calculate duration
-            setTimeout(() => {
-                orb.classList.remove('speaking');
-            }, speakTime);
-
+            u.rate = 1.1;
+            if(/[\u0980-\u09FF]/.test(t)) { u.lang = 'bn-IN'; } else { u.lang = 'en-GB'; }
+            u.onstart = () => orb.classList.add('vibrate');
+            u.onend = () => orb.classList.remove('vibrate');
             window.speechSynthesis.speak(u);
         }
 
-        async function talk() {
-            const uInput = prompt("Signal:");
-            if (!uInput) return;
+        // SPEECH RECOGNITION SETUP
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const listen = new Recognition();
+        listen.lang = 'en-IN';
 
-            box.innerText = "...searching memory...";
-            st.innerText = "ACCESSING CORE...";
+        listen.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            box.innerText = "you: " + transcript;
+            processSignal(transcript);
+        };
 
+        async function processSignal(uInput) {
             chatHistory.push({ role: "user", parts: [{ text: uInput }] });
-
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
-                
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        systemInstruction: S_I,
-                        contents: chatHistory.slice(-40) 
-                    })
+                    body: JSON.stringify({ systemInstruction: S_I, contents: chatHistory.slice(-40) })
                 });
-
                 const d = await r.json();
-                
-                if (d.candidates && d.candidates[0].content) {
+                if (d.candidates) {
                     const reply = d.candidates[0].content.parts[0].text;
                     box.innerText = reply;
-                    
                     chatHistory.push({ role: "model", parts: [{ text: reply }] });
                     localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
-                    
                     speak(reply);
-                    st.innerText = "LINK ACTIVE";
                 }
-            } catch (e) { 
-                box.innerText = "error: signal snapped."; 
-            }
+            } catch (e) { box.innerText = "signal error."; }
         }
 
-        iBtn.onclick = async () => {
-            try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                iBtn.style.display = 'none';
-                tBtn.style.display = 'inline-block';
-                cBtn.style.display = 'inline-block';
-                st.innerText = "NEURAL LINK ESTABLISHED";
-                
-                const welcome = chatHistory.length > 0 ? "I remember you, Rounak." : "I'm awake, Rounak.";
-                box.innerText = welcome.toLowerCase();
-                speak(welcome);
-            } catch (err) {
-                box.innerText = "allow mic permissions.";
+        // MIC TOGGLE LOGIC
+        micBtn.onclick = () => {
+            micEnabled = !micEnabled;
+            if (micEnabled) {
+                micBtn.innerText = "MIC: ACTIVE";
+                micBtn.className = "btn mic-on";
+            } else {
+                micBtn.innerText = "MIC: KILLED";
+                micBtn.className = "btn mic-off";
+                window.speechSynthesis.cancel(); // Stop talking if mic is killed
             }
         };
 
-        tBtn.onclick = talk;
+        // INITIALIZE
+        document.getElementById('init-btn').onclick = async () => {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('init-screen').style.display = 'none';
+            speak("Systems ready.");
+        };
 
-        cBtn.onclick = () => {
-            if(confirm("Purge memory?")) {
-                localStorage.removeItem('sara_memory');
-                chatHistory = [];
-                location.reload();
+        // TRIGGER LISTENING (Only if enabled)
+        orb.onclick = () => { 
+            if (micEnabled) {
+                listen.start(); 
+                box.innerText = "listening..."; 
+            } else {
+                box.innerText = "mic is killed. use manual input.";
             }
+        };
+
+        // MANUAL INPUT BACKUP
+        document.getElementById('type-btn').onclick = () => {
+            const manual = prompt("Type your signal:");
+            if (manual) processSignal(manual);
         };
     </script>
 </body>
