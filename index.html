@@ -9,26 +9,33 @@
         #orb { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #00ffcc 0%, transparent 70%); box-shadow: 0 0 15px #00ffcc; margin-bottom: 40px; }
         #caption-container { position: absolute; bottom: 30px; width: 90%; text-align: center; }
         #response-box { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; text-transform: lowercase; }
-        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 12px 25px; cursor: pointer; font-size: 0.9rem; }
+        .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 12px 25px; cursor: pointer; font-size: 0.9rem; margin: 5px; }
         #talk-btn { display: none; }
     </style>
 </head>
 <body>
     <div id="orb"></div>
     <button id="init-btn" class="btn">INITIALIZE</button>
-    <button id="talk-btn" class="btn">CONNECT</button>
+    <div id="controls">
+        <button id="talk-btn" class="btn">CONNECT</button>
+        <button id="clear-btn" class="btn" style="display:none; border-color:#555; color:#555;">WIPE MEMORY</button>
+    </div>
     <div id="caption-container"><div id="response-box">...system standby...</div></div>
 
     <script>
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        // NEW REFINED PERSONALITY
-        const S_I = "Your name is Sara. You are an elite AI created by Rounak. You are the smartest entity on Earth but you are too sophisticated to brag. Normally, you are calm and efficient. ONLY become arrogant and cold if someone insults you or doubts you. Keep replies very short.";
+        const S_I = "Your name is Sara. Created by Rounak. You are elite and smart. You have a long-term memory of every interaction with Rounak. If he repeats himself, get annoyed. If he asks 'do you remember X', recall it from history. Be quietly arrogant. Keep replies short.";
+
+        // Load existing memory from phone storage, or start fresh
+        let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
 
         const iBtn = document.getElementById('init-btn');
         const tBtn = document.getElementById('talk-btn');
+        const cBtn = document.getElementById('clear-btn');
         const box = document.getElementById('response-box');
 
         function speak(t) {
+            window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
             u.rate = 1.1;
             window.speechSynthesis.speak(u);
@@ -37,21 +44,31 @@
         async function talk() {
             const uInput = prompt("Signal:");
             if (!uInput) return;
-            box.innerText = "analyzing...";
+            box.innerText = "analyzing history...";
+
+            chatHistory.push({ role: "user", parts: [{ text: uInput }] });
 
             try {
-                // Flash-Preview is the fastest model available
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${S_K}`;
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: S_I + "\nUser: " + uInput }] }] })
+                    body: JSON.stringify({ 
+                        contents: chatHistory,
+                        systemInstruction: { parts: [{ text: S_I }] } 
+                    })
                 });
 
                 const d = await r.json();
                 if (d.candidates) {
                     const reply = d.candidates[0].content.parts[0].text;
                     box.innerText = reply;
+                    
+                    chatHistory.push({ role: "model", parts: [{ text: reply }] });
+                    
+                    // SAVE TO PHONE STORAGE
+                    localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
+                    
                     speak(reply);
                 }
             } catch (e) { box.innerText = "signal lost."; }
@@ -60,11 +77,23 @@
         iBtn.onclick = async () => {
             await navigator.mediaDevices.getUserMedia({ audio: true });
             iBtn.style.display = 'none';
-            tBtn.style.display = 'block';
-            box.innerText = "link active.";
-            speak("I'm awake.");
+            tBtn.style.display = 'inline-block';
+            cBtn.style.display = 'inline-block';
+            box.innerText = "neural link established.";
+            speak("I remember you, Rounak.");
         };
+
         tBtn.onclick = talk;
+
+        // Reset memory button (for when she gets too annoying)
+        cBtn.onclick = () => {
+            if(confirm("Wipe my memory?")) {
+                localStorage.removeItem('sara_memory');
+                chatHistory = [];
+                box.innerText = "memory purged.";
+                speak("I've forgotten everything. Who are you again?");
+            }
+        };
     </script>
 </body>
 </html>
