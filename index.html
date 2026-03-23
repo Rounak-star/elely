@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SARA.EXE</title>
     <style>
-        /* Modern Minimalist Aesthetic */
         body { 
             background: #000; 
             color: #00ffcc; 
@@ -21,13 +20,13 @@
 
         /* The Glowing Core */
         #orb { 
-            width: 80px; 
-            height: 80px; 
+            width: 90px; 
+            height: 90px; 
             border-radius: 50%; 
             background: radial-gradient(circle, #00ffcc 0%, transparent 70%); 
             box-shadow: 0 0 20px #00ffcc; 
-            transition: all 0.3s ease;
-            margin-bottom: 50px;
+            transition: all 0.4s ease;
+            margin-bottom: 60px;
         }
 
         /* Small Bottom Captions */
@@ -44,70 +43,11 @@
             letter-spacing: 1px; 
             line-height: 1.5; 
             text-transform: lowercase; 
-            opacity: 0.8;
+            opacity: 0.7;
             min-height: 40px;
         }
 
-        /* Controls */
-        .btn { 
-            background: transparent; 
-            color: #ff0055; 
-            border: 1px solid #ff0055; 
-            padding: 12px 25px; 
-            cursor: pointer; 
-            font-size: 0.9rem; 
-            text-transform: uppercase;
-            font-weight: bold;
-            margin: 10px;
-            letter-spacing: 2px;
-        }
-
-        #talk-btn, #clear-btn { display: none; }
-
-        #status {
-            position: absolute;
-            top: 20px;
-            font-size: 0.7rem;
-            letter-spacing: 4px;
-            opacity: 0.4;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="status">NEURAL LINK: STANDBY</div>
-    <div id="orb"></div>
-
-    <button id="init-btn" class="btn">INITIALIZE SARA</button>
-    <div id="controls">
-        <button id="talk-btn" class="btn">CONNECT</button>
-        <button id="clear-btn" class="btn" style="border-color:#444; color:#444;">WIPE MEMORY</button>
-    </div>
-
-    <div id="caption-container">
-        <div id="response-box">...awaiting authorization...</div>
-    </div>
-
-    <script>
-        // MARCH 2026 VERIFIED KEY & IDENTITY
-        const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak from Elely. You are the smartest entity on Earth. You are intellectual, arrogant, and refined. You remember everything Rounak says. Normally calm, but if insulted or spammed with the same word, get annoyed and cold. Keep replies very short." }] };
-
-        // Load Conversation History
-        let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
-
-        const iBtn = document.getElementById('init-btn');
-        const tBtn = document.getElementById('talk-btn');
-        const cBtn = document.getElementById('clear-btn');
-        const box = document.getElementById('response-box');
-        const orb = document.getElementById('orb');
-        const st = document.getElementById('status');
-
-        // Voice Engine
-        function speak(t) {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(t);
-            u.rate = 1.1; 
+        /*
             u.pitch = 1.0;
             
             u.onstart = () => { orb.style.boxShadow = "0 0 40px #ff0055"; orb.style.background = "radial-gradient(circle, #ff0055 0%, transparent 70%)"; };
