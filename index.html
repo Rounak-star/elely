@@ -11,30 +11,39 @@
         @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 2px); } }
         #controls { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn { background: transparent; color: #ff0055; border: 1px solid #ff0055; padding: 10px 15px; cursor: pointer; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
         .mic-on { color: #00ffcc; border-color: #00ffcc; }
         .mic-off { color: #444; border-color: #444; }
         #caption-container { position: absolute; bottom: 40px; width: 85%; text-align: center; }
-        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.8; }
+        #response-box { font-size: 0.8rem; color: #fff; letter-spacing: 1px; text-transform: lowercase; opacity: 0.8; min-height: 40px; }
         #init-screen { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
-    <div id="init-screen"><button id="init-btn" class="btn" style="padding: 20px 40px; font-size: 1.2rem;">BOOT SARA.EXE</button></div>
+    <div id="init-screen">
+        <button id="init-btn" class="btn" style="padding: 20px 40px; font-size: 1.2rem;">REBOOT SARA</button>
+    </div>
+
     <div id="orb"></div>
+
     <div id="controls">
         <button id="mic-toggle" class="btn mic-on">MIC: ON</button>
         <button id="type-btn" class="btn">TYPE</button>
         <button id="clear-btn" class="btn" style="color:#444; border-color:#444;">WIPE</button>
     </div>
-    <div id="caption-container"><div id="response-box">...system online...</div></div>
+
+    <div id="caption-container">
+        <div id="response-box">...link stable...</div>
+    </div>
 
     <script>
         const S_K = atob("QUl6YVN5RHdsU0R4SXppUXZETDZYU0RUWlJrS0hSV0FRUjZmWEU0");
-        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite and arrogant. Understand English/Bengali. Short replies. Never forget topics." }] };
+        const S_I = { parts: [{ text: "Your name is Sara. Created by Rounak. You are elite and arrogant. Understand English and Bengali. Use very short, sharp replies." }] };
+
         let chatHistory = JSON.parse(localStorage.getItem('sara_memory')) || []; 
         let micEnabled = true;
+        let isProcessing = false;
 
         const orb = document.getElementById('orb');
         const box = document.getElementById('response-box');
@@ -46,13 +55,13 @@
             u.rate = 1.1;
             u.lang = /[\u0980-\u09FF]/.test(t) ? 'bn-IN' : 'en-GB';
             u.onstart = () => orb.classList.add('vibrate');
-            u.onend = () => orb.classList.remove('vibrate');
+            u.onend = () => { orb.classList.remove('vibrate'); isProcessing = false; };
             window.speechSynthesis.speak(u);
         }
 
         async function processSignal(uInput) {
-            if (!uInput) return;
-            tBtn.disabled = true; // Anti-spam lock
+            if (!uInput || isProcessing) return;
+            isProcessing = true;
             box.innerText = "...processing...";
             chatHistory.push({ role: "user", parts: [{ text: uInput }] });
 
@@ -61,7 +70,11 @@
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ systemInstruction: S_I, contents: chatHistory.slice(-20) })
+                    body: JSON.stringify({ 
+                        systemInstruction: S_I, 
+                        // Reduced history to 15 messages for speed/quota safety
+                        contents: chatHistory.slice(-15) 
+                    })
                 });
                 
                 const d = await r.json();
@@ -72,10 +85,10 @@
                     localStorage.setItem('sara_memory', JSON.stringify(chatHistory));
                     speak(reply);
                 } else if (d.error && d.error.code === 429) {
-                    box.innerText = "system overload. wait 60 seconds.";
+                    box.innerText = "quota exceeded. wait 1 minute.";
+                    isProcessing = false;
                 }
-            } catch (e) { box.innerText = "signal error."; }
-            setTimeout(() => { tBtn.disabled = false; }, 3000); // Unlock after 3s
+            } catch (e) { box.innerText = "signal error."; isProcessing = false; }
         }
 
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -83,7 +96,14 @@
             const listen = new Recognition();
             listen.lang = 'en-IN';
             listen.onresult = (e) => processSignal(e.results[0][0].transcript);
-            orb.onclick = () => { if(micEnabled && !tBtn.disabled) { listen.start(); box.innerText = "listening..."; } };
+            listen.onerror = () => { isProcessing = false; };
+            
+            orb.onclick = () => { 
+                if(micEnabled && !isProcessing) { 
+                    listen.start(); 
+                    box.innerText = "listening..."; 
+                } 
+            };
         }
 
         document.getElementById('mic-toggle').onclick = (e) => {
@@ -92,22 +112,16 @@
             e.target.className = micEnabled ? "btn mic-on" : "btn mic-off";
         };
 
-        tBtn.onclick = () => { const input = prompt("Signal:"); if (input) processSignal(input); };
+        tBtn.onclick = () => { if(!isProcessing) { const input = prompt("Signal:"); if (input) processSignal(input); } };
         document.getElementById('clear-btn').onclick = () => { localStorage.clear(); location.reload(); };
         document.getElementById('init-btn').onclick = async () => {
             await navigator.mediaDevices.getUserMedia({ audio: true });
             document.getElementById('init-screen').style.display = 'none';
-            speak("Online.");
+            speak("Reconnected.");
         };
     </script>
 </body>
 </html>
-            location.reload();
-        };
-
-        document.getElementById('init-btn').onclick = async () => {
-            try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
                 document.getElementById('init-screen').style.display = 'none';
                 speak("I am operational.");
             } catch (err) { alert("Microphone access required."); }
